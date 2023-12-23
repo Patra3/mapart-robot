@@ -7,9 +7,24 @@ const path = require('path');
 
 // Prismarine group
 const nbt = require('prismarine-nbt');
+const mineflayer = require('mineflayer');
+const Item = require('prismarine-item')('1.20');
+
+// Express.js
+const express = require('express');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
+const app = express();
+const port = 80; // localhost http
+
+// Colors
+var colors = require('colors');
 
 
 ////////// DEFINITIONS //////////
+
+let bot;
+let logs = '';
 
 // Stores each nbt job (can be very large).
 const jobs = [];
@@ -55,5 +70,41 @@ async function readAndLoad(file){
   jobs.push(parseNBT(parsed));
 }
 
-// Just load the test NBT for now.
-readAndLoad('samples/sample2.nbt');
+/**
+ * Logs a message.
+ * @param {String} msg 
+ */
+function log(msg){
+  logs += msg + '\n';
+}
+
+app.get('/', (req, res) => {
+  res.sendFile(path.resolve('index.html'));
+});
+
+app.get('/querylog', (req, res) => {
+  res.send(logs);
+});
+
+app.post('/command', (req, res) => {
+  const files = req.files;
+
+});
+
+// App start point
+app.listen(port, () => {
+  console.clear();
+  console.log(' -> Mapart Robot started on port 80, loading server bot...'.green);
+  bot = mineflayer.createBot({
+    host: 'localhost',
+    username: 'BobTheBuilder',
+    auth: 'offline'
+  });
+  bot.on('error', console.log);
+  bot.on('kicked', console.log);
+  bot.on('spawn', () => {
+    console.log('* Bot successfully spawned.'.white);
+  });
+  log('Mapart robot spawned into the server.');
+  readAndLoad('samples/sample2.nbt');
+});
