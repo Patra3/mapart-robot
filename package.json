@@ -17,7 +17,6 @@
   },
   "homepage": "https://github.com/Patra3/mapart-robot#readme",
   "dependencies": {
-    "mineflayer": "^4.0.0",
     "prismarine-nbt": "^2.3.0"
   }
 }
