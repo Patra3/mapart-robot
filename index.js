@@ -13,7 +13,7 @@ const Item = require('prismarine-item')('1.20');
 // Express.js
 const express = require('express');
 const multer = require('multer');
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({});
 const app = express();
 const port = 80; // localhost http
 
@@ -91,9 +91,14 @@ app.post('/command', upload.single('file'), (req, res, next) => {
   // Get command.
   let command = req.body.command;
   if (command.includes('help')){
-    log('******* Help Commands \n/nbt - Upload an NBT into the jobs queue (need to attach a file with command)\n' + 
+    log('\n******* Help Commands \n/nbt - Upload an NBT into the jobs queue (need to attach a file with command)\n' + 
     '/jobs - Get a list of pending jobs\n' + 
-    '');
+    '/runjob <index> - Runs job with given index.\n' +
+    '/stopjob - Stops the current job.\n' + 
+    '/rmjob <index> - Deletes a job with given index.\n');
+  }
+  else if (command.includes('nbt')){
+    
   }
 
   res.redirect('/');
