@@ -86,7 +86,7 @@ app.get('/querylog', (req, res) => {
   res.send(logs);
 });
 
-app.post('/command', upload.single('file'), (req, res, next) => {
+app.post('/command', upload.single('file'), async (req, res, next) => {
 
   // Get command.
   let command = req.body.command;
@@ -98,6 +98,11 @@ app.post('/command', upload.single('file'), (req, res, next) => {
     '/rmjob <index> - Deletes a job with given index.\n');
   }
   else if (command.includes('nbt')){
+    try {
+      await fs.mkdir(path.resolve('jobs/'));
+    }
+    catch(err){}
+    // Let's write the file.
     
   }
 
