@@ -86,9 +86,17 @@ app.get('/querylog', (req, res) => {
   res.send(logs);
 });
 
-app.post('/command', (req, res) => {
-  const files = req.files;
+app.post('/command', upload.single('file'), (req, res, next) => {
 
+  // Get command.
+  let command = req.body.command;
+  if (command.includes('help')){
+    log('******* Help Commands \n/nbt - Upload an NBT into the jobs queue (need to attach a file with command)\n' + 
+    '/jobs - Get a list of pending jobs\n' + 
+    '');
+  }
+
+  res.redirect('/');
 });
 
 // App start point
