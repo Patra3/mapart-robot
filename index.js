@@ -24,10 +24,11 @@ var colors = require('colors');
 ////////// DEFINITIONS //////////
 
 let bot;
+let stopJob = false; // Global stop job condition.
 let logs = '';
 
 // Stores each nbt job (can be very large).
-const jobs = [];
+const jobs = {};
 
 
 ////////// SOURCE //////////
@@ -67,7 +68,22 @@ function parseNBT(parsed){
 async function readAndLoad(file){
   const buffer = await fs.readFile(path.resolve(file));
   const {parsed, type} = await nbt.parse(buffer);
-  jobs.push(parseNBT(parsed));
+  jobs[path.basename(file) + '@' + Object.keys(jobs).length] = parseNBT(parsed);
+}
+
+/**
+ * Builds the map art. Set global stopJob = false to stop the loop.
+ * The job will keey partial track of its progress and can pick up where it left off.
+ * @param {Object} obj Either it is the full job object in jobs{}, or the file 'partial.txt' which contains the save data as needed. 
+ * @param {int} x Origin x
+ * @param {int} y Origin y
+ * @param {int} z Origin z
+ */
+async function runJob(obj, x, y, z){
+
+  // Ensure the bot is in creative mode for this.
+
+
 }
 
 /**
@@ -89,11 +105,11 @@ app.get('/querylog', (req, res) => {
 app.post('/command', upload.single('file'), async (req, res, next) => {
 
   // Get command.
-  let command = req.body.command;
+  let command = req.body.command.toLowerCase();
   if (command.includes('help')){
-    log('\n******* Help Commands \n/nbt - Upload an NBT into the jobs queue (need to attach a file with command)\n' + 
+    log('\n******* Help Commands *******\n/nbt - Upload an NBT into the jobs queue (need to attach a file with command)\n' + 
     '/jobs - Get a list of pending jobs\n' + 
-    '/runjob <index> - Runs job with given index.\n' +
+    '/runjob <index> <x> <y> <z> - Runs job with given index at given x,y,z origin (if not provided the bot will run with its own starting coords).\n' +
     '/stopjob - Stops the current job.\n' + 
     '/rmjob <index> - Deletes a job with given index.\n');
   }
@@ -103,14 +119,73 @@ app.post('/command', upload.single('file'), async (req, res, next) => {
     }
     catch(err){}
     // Let's write the file.
-    
+    console.log(req.file);
+    let file = req.file;
+    if (!file.originalname.includes('.nbt')){
+      // Ignore since it was not valid NBT.
+      log('* Uploaded file was invalid, not NBT.');
+      res.redirect('/');
+      return false;
+    }
+    else{
+      let t = path.resolve('jobs/' + file.originalname);
+      fs.writeFile(t, file.buffer, 'ascii');
+      log('* NBT \'' + file.originalname + '\' uploaded and loaded into jobs.');
+      // Load the NBT for real.
+      readAndLoad(t);
+      res.redirect('/');
+    }
   }
-
-  res.redirect('/');
+  else if (command.includes('jobs')){
+    log('\n******* Jobs *******\n');
+    let keys = Object.keys(jobs);
+    if (keys.length === 0){
+      log('No jobs found.');
+    }
+    keys.forEach(key => {
+      let s = key.split('@');
+      let filename = s[0];
+      let index = s[1];
+      log(' - Index ' + index + ' (' + filename + ')');
+    });
+    res.redirect('/');
+  }
+  else if (command.includes('rmjob')){
+    let index = parseInt(command.split(' ')[1]);
+    let keys = Object.keys(jobs);
+    if (isNaN(index) || (index >= keys.length) || (index < 0)){
+      log('Invalid index.');
+      res.redirect('/');
+    }
+    keys.forEach(key => {
+      let id = parseInt(key.split('@')[1]);
+      if (id === index){
+        delete jobs[key];
+        log('Successfully removed job index ' + id + '.');
+      }
+    });
+    res.redirect('/');
+  }
+  else if (command.includes('runjob')){
+    let index = parseInt(command.split(' ')[1]);
+    let keys = Object.keys(jobs);
+    if (isNaN(index) || (index >= keys.length) || (index < 0)){
+      log('Invalid index.');
+      res.redirect('/');
+    }
+    keys.forEach(key => {
+      let id = parseInt(key.split('@')[1]);
+      if (id === index){
+        log('Running job ' + id + '.');
+        runJob(jobs[key]);
+        res.redirect('/');
+      }
+    });
+  }
 });
 
 // App start point
-app.listen(port, () => {
+app.listen(port, async () => {
   console.clear();
   console.log(' -> Mapart Robot started on port 80, loading server bot...'.green);
   bot = mineflayer.createBot({
@@ -124,5 +199,9 @@ app.listen(port, () => {
     console.log('* Bot successfully spawned.'.white);
   });
   log('Mapart robot spawned into the server.');
-  readAndLoad('samples/sample2.nbt');
+  // Read any cached jobs.
+  let files = await fs.readdir(path.resolve('jobs/'));
+  files.forEach(file => {
+    readAndLoad(path.resolve('jobs/' + file));
+  });
 });
