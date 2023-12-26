@@ -82,7 +82,13 @@ async function readAndLoad(file){
 async function runJob(obj, x, y, z){
 
   // Ensure the bot is in creative mode for this.
+  log('Running job at ' + x + ', ' + y + ', ' + z + '.');
 
+  // This will be the start 0,0 point of our build.
+  let origin = [x, y, z];
+
+  // First, we clear every block in x-y-z needed for build (make space).
+  
 
 }
 
@@ -168,16 +174,19 @@ app.post('/command', upload.single('file'), async (req, res, next) => {
   }
   else if (command.includes('runjob')){
     let index = parseInt(command.split(' ')[1]);
+    let x = parseInt(command.split(' ')[2]);
+    let y = parseInt(command.split(' ')[3]);
+    let z = parseInt(command.split(' ')[4]);
     let keys = Object.keys(jobs);
-    if (isNaN(index) || (index >= keys.length) || (index < 0)){
-      log('Invalid index.');
+    if (isNaN(index) || isNaN(x) || isNaN(y) || isNaN(z) || (index >= keys.length) || (index < 0)){
+      log('Invalid parameter or index.');
       res.redirect('/');
     }
     keys.forEach(key => {
       let id = parseInt(key.split('@')[1]);
       if (id === index){
         log('Running job ' + id + '.');
-        runJob(jobs[key]);
+        runJob(jobs[key], x, y, z);
         res.redirect('/');
       }
     });
